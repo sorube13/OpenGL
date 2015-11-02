@@ -36,6 +36,11 @@ static float camTargetX;
 static float camTargetY;
 static float camTargetZ;
 
+GLuint texture; // Identifiant opengl de la texture
+static float currentTime = 0.0; // Le temps courant en milliseconds
+static float acceleration = 0.0;
+static float passedTime;
+
 void polar2Cartesian (float phi, float theta, float d, float & x, float & y, float & z) {
 	x = d*sin (theta) * cos (phi);
     y = d*cos (theta);
@@ -55,6 +60,22 @@ void printUsage () {
          << " <drag>+<right button>: move model" << std::endl
          << " <drag>+<middle button>: zoom" << std::endl
          << " q, <esc>: Quit" << std::endl << std::endl;
+}
+
+void genCheckerboard(unsigned int width, unsigned int height, unsigned char * image){
+	glEnable (GL_TEXTURE_2D); // Activation de la texturation 2D
+	glGenTextures (1, &texture); // Génération d’une texture OpenGL
+	glBindTexture (GL_TEXTURE_2D, texture); // Activation de la texture comme texture courante
+	// les 4 lignes suivantes paramètre le filtrage de texture ainsi que sa répétition au-delà du carré unitaire
+	glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	// La commande suivante remplit la texture (sur GPU) avec les données de l’image
+	glTexImage2D (GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE,
+	image);
+
+
 }
 
 void init () {
@@ -104,6 +125,20 @@ void init () {
 		camTargetX = 0.0;
 		camTargetY = 0.0;
 		camTargetZ = 0.0;
+
+		//Initialize image
+		unsigned int width = 4;
+		unsigned int height = 4;
+		unsigned char image [ 4 * width * height] = {0,0,255,255,
+																								 255,0,0,255,
+																								 0,255,0,255,
+																								 0,0,0,255,
+																								 128, 128,128,255,
+																								 13,5,88,255,
+																								 68, 79, 156, 255,
+																								 200, 100, 30, 255};
+		genCheckerboard(width, height, image);
+
 }
 
 void setupCamera () {
@@ -138,7 +173,13 @@ void glSphere(float x, float y, float z, float r){
 
 	glMatrixMode(GL_MODELVIEW); // inidque que l'on va désormais altérer la matrice modèle-vue
 	glPushMatrix(); // pousse la matrice courante sur un pile
+	float v = (1.0/2.0)*((currentTime-passedTime)/1000.0)*((currentTime-passedTime)/1000.0)*acceleration;
+	x = x + v;
+	cout << "x: " << x << endl;
+	cout << "v: " << v << endl;
+	cout << "------------------" << endl;
 	glTranslatef(x,y,z); // applique une translation à la matrice
+
 
 	glBegin(GL_TRIANGLES);
 
@@ -155,16 +196,19 @@ void glSphere(float x, float y, float z, float r){
 			polar2Cartesian(nPhi, nTheta, d, x1, y1, z1);
 			glColor3f(x1, y1, z1);
 			glNormal3f(x1, y1, z1);
+			glTexCoord2f(nTheta/theta, nPhi/phi);
 			glVertex3f(x1, y1, z1);
 			//M2
 			polar2Cartesian(nPhi2, nTheta2, d, x1, y1, z1);
 			glColor3f(x1, y1, z1);
 			glNormal3f(x1, y1, z1);
+			glTexCoord2f(nTheta2/theta, nPhi2/phi);
 			glVertex3f(x1, y1, z1);
 			//M1
 			polar2Cartesian(nPhi, nTheta2, d, x1, y1, z1);
 			glColor3f(x1, y1, z1);
 			glNormal3f(x1, y1, z1);
+		  glTexCoord2f(nTheta2/theta, nPhi/phi);
 			glVertex3f(x1, y1, z1);
 
 			// Triangle M-M3-M2
@@ -172,16 +216,19 @@ void glSphere(float x, float y, float z, float r){
 		  polar2Cartesian(nPhi, nTheta, d, x1, y1, z1);
 		  glColor3f(x1, y1, z1);
 			glNormal3f(x1, y1, z1);
+			glTexCoord2f(nTheta/theta, nPhi/phi);
 			glVertex3f(x1, y1, z1);
 			//M3
 			polar2Cartesian(nPhi2, nTheta, d, x1, y1, z1);
 			glColor3f(x1, y1, z1);
 			glNormal3f(x1, y1, z1);
+			glTexCoord2f(nTheta/theta, nPhi2/phi);
 			glVertex3f(x1, y1, z1);
 			//M2
 			polar2Cartesian(nPhi2, nTheta2, d, x1, y1, z1);
 			glColor3f(x1, y1, z1);
 			glNormal3f(x1, y1, z1);
+			glTexCoord2f(nTheta2/theta, nPhi2/phi);
 			glVertex3f(x1, y1, z1);
 		}
 	}
@@ -202,6 +249,7 @@ void glSphereWithMat(float x, float y, float z, float r,
 	glMaterialfv (GL_FRONT_AND_BACK, GL_DIFFUSE, material_color);
 	glMaterialf (GL_FRONT_AND_BACK, GL_SHININESS, shininess);
 
+	glBindTexture(GL_TEXTURE_2D, texture);
 	glSphere(x, y, z, r);
 }
 
@@ -220,30 +268,33 @@ void drawTriangle(){
 void display () {
     setupCamera ();
     glClear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // Erase the color and z buffers.
-		glSphereWithMat(0.0, 0.0, 0.0, 0.4,
-						       1.0, 0.0, 0.0,
-									 1.0, 1.0, 1.0,
-									 1.0);
-		glSphereWithMat(1.0, 0.0, 0.0, 0.4,
-										0.0, 1.0, 0.0,
-										0.6, 0.40, 1.0,
-										0.0);
-		// glSphere(-0.5, 1.0, 0.0, 0.5);
-		// glSphere(0.5, 1.0, 0.0, 0.5);
-		// glSphere(1.5, 0.0, 0.0, 0.5);
-		// glSphere(0.5, 0.0, 0.0, 0.5);
-		// glSphere(-0.5, 0.0, 0.0, 0.5);
-		// glSphere(-1.5, 0.0, 0.0, 0.5);
-		// glSphere(-2.0, -1.0, 0.0, 0.5);
-		// glSphere(-1.0, -1.0, 0.0, 0.5);
-		// glSphere(0.0, -1.0, 0.0, 0.5);
-		// glSphere(1.0, -1.0, 0.0, 0.5);
-		// glSphere(2.0, -1.0, 0.0, 0.5);
-		//drawTriangle();
 
+		if(0)
+			drawTriangle();
 
-
-	// Put your drawing code (glBegin, glVertex, glCallList, glDrawArray, etc) here
+		if(1){
+			glSphereWithMat(-2.0, 0.0, 0.0, 0.4,
+							       1.0, 0.0, 0.0,
+										 1.0, 1.0, 1.0,
+										 1.0);
+			// glSphereWithMat(1.0, 0.0, 0.0, 0.4,
+			// 								0.0, 1.0, 0.0,
+			// 								0.6, 0.40, 1.0,
+			// 								0.0);
+		}
+		if(0){
+			glSphere(-0.5, 1.0, 0.0, 0.5);
+			glSphere(0.5, 1.0, 0.0, 0.5);
+			glSphere(1.5, 0.0, 0.0, 0.5);
+			glSphere(0.5, 0.0, 0.0, 0.5);
+			glSphere(-0.5, 0.0, 0.0, 0.5);
+			glSphere(-1.5, 0.0, 0.0, 0.5);
+			glSphere(-2.0, -1.0, 0.0, 0.5);
+			glSphere(-1.0, -1.0, 0.0, 0.5);
+			glSphere(0.0, -1.0, 0.0, 0.5);
+			glSphere(2.0, -1.0, 0.0, 0.5);
+			glSphere(1.0, -1.0, 0.0, 0.5);
+		}
 
     glFlush (); // Ensures any previous OpenGL call has been executed
     glutSwapBuffers ();  // swap the render buffer and the displayed (screen) one
@@ -288,6 +339,25 @@ void keyboard (unsigned char keyPressed, int x, int y) {
 			glEnable(GL_LIGHT3);
 			break;
 
+		case '+':
+		passedTime = currentTime;
+		//currentTime = glutGet((GLenum)GLUT_ELAPSED_TIME);
+			acceleration = acceleration + 1;
+			break;
+
+		case '-':
+			if(acceleration > 0.0){
+				passedTime = currentTime;
+				//currentTime = glutGet((GLenum)GLUT_ELAPSED_TIME);
+				acceleration = acceleration - 1;
+			}else{ acceleration = 0.0;}
+			break;
+
+		case 'r':
+			acceleration = 0.0;
+			currentTime = 0.0;
+			break;
+
      default:
         printUsage ();
         break;
@@ -304,6 +374,10 @@ void motion (int x, int y) {
 // This function is executed in an infinite loop. It updated the window title
 // (frame-per-second, model size) and ask for rendering
 void idle () {
+	glutPostRedisplay();
+	//passedTime = currentTime;
+	currentTime = glutGet((GLenum)GLUT_ELAPSED_TIME);
+
 }
 
 int main (int argc, char ** argv) {
