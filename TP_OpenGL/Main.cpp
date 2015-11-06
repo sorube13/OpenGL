@@ -66,12 +66,6 @@ void polar2Cartesian (float phi, float theta, float d, float & x, float & y, flo
 	z = d*sin (theta) * sin (phi);
 }
 
-void cartesian2Polar(float x, float y, float z, float & phi, float & theta, float & d){
-		d = sqrt(x*x + y*y + z*z);
-		theta = acos(y/d);
-		phi = acos(x/(d*sin(theta)));
-}
-
 void printUsage () {
 	std::cerr << std::endl // send a line break to the standard error output
 		 << appTitle << std::endl
@@ -80,7 +74,7 @@ void printUsage () {
          << "Cammandes clavier :" << std::endl
          << "------------------" << std::endl
          << " ?: Print help" << std::endl
-		 << " w: Toggle wireframe mode" << std::endl
+		 		 << " w: Toggle wireframe mode" << std::endl
          << " <drag>+<left button>: rotate model" << std::endl
          << " <drag>+<right button>: move model" << std::endl
          << " <drag>+<middle button>: zoom" << std::endl
@@ -101,9 +95,7 @@ void genCheckerboard(unsigned int width, unsigned int height, unsigned char * im
 	glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
 	glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 	// La commande suivante remplit la texture (sur GPU) avec les données de l’image
-	glTexImage2D (GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE,
-	image);
-
+	glTexImage2D (GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, image);
 
 }
 
@@ -165,7 +157,16 @@ void init () {
 																								 128, 128,128,255,
 																								 13,5,88,255,
 																								 68, 79, 156, 255,
-																								 200, 100, 30, 255};
+																								 200, 100, 30, 255,
+																									0,0,255,255,
+																									255,0,0,255,
+																									0,255,0,255,
+																									0,0,0,255,
+																									128, 128,128,255,
+																									13,5,88,255,
+																									68, 79, 156, 255,
+																									200, 100, 30, 255};
+
 		genCheckerboard(width, height, image);
 
 }
@@ -177,11 +178,11 @@ void setupCamera () {
 	glMatrixMode (GL_MODELVIEW); // Set the modelview matrix as current. All upcoming matrix manipulations will affect it.
 	glLoadIdentity ();
 	float camPosX, camPosY, camPosZ;
-	polar2Cartesian (camPhi+ rotate_phi/screenWidth, camTheta+ rotate_theta/screenHeight, camDist2Target/zoomFactor, camPosX, camPosY, camPosZ);
+	polar2Cartesian (camPhi+ rotate_phi*2.0/screenWidth, camTheta+ rotate_theta*2.0/screenHeight, camDist2Target/zoomFactor, camPosX, camPosY, camPosZ);
 	camPosX += camTargetX ;
 	camPosY += camTargetY ;
 	camPosZ += camTargetZ;
-	gluLookAt (camPosX , camPosY, camPosZ, camTargetX + x_move*2/screenWidth, camTargetY+y_move*2/screenHeight, camTargetZ, 0.0, 1.0, 0.0); // Set up the current modelview matrix with camera transform
+	gluLookAt (camPosX , camPosY, camPosZ, camTargetX + x_move*2.0/screenWidth, camTargetY+y_move*2.0/screenHeight, camTargetZ, 0.0, 1.0, 0.0); // Set up the current modelview matrix with camera transform
 }
 
 void reshape (int w, int h) {
@@ -195,8 +196,8 @@ void reshape (int w, int h) {
 void reset(){
 	acceleration = 0.0;
 	currentTime = 0.0;
-	deltaT = 0.0;
 	passedTime = 0.0;
+	deltaT = 0.0;
 	v=0.0;
 	initFlag = true;
 	x_move = 0.0;
@@ -320,17 +321,17 @@ void display () {
 		if(0)
 			drawTriangle();
 
-		if(0){
-			// glSphereWithMat(-2.0, 0.0, 0.0, 0.4,
-			// 				       1.0, 0.0, 0.0,
-			// 							 1.0, 1.0, 1.0,
-			// 							 1.0);
+		if(1){
+			glSphereWithMat(-2.0, 0.0, 0.0, 0.4,
+							       1.0, 0.0, 0.0,
+										 1.0, 1.0, 1.0,
+										 1.0);
 			glSphereWithMat(0.0, 0.0, 0.0, 0.4,
 											0.0, 1.0, 0.0,
 											0.6, 0.40, 1.0,
 											0.0);
 		}
-		if(1){
+		if(0){
 			glSphere(-0.5, 1.0, 0.0, 0.5);
 			glSphere(0.5, 1.0, 0.0, 0.5);
 			glSphere(1.5, 0.0, 0.0, 0.5);
@@ -414,17 +415,19 @@ void keyboard (unsigned char keyPressed, int x, int y) {
 
 void mouse (int button, int state, int x, int y) {
 	if(button == GLUT_LEFT_BUTTON && state==GLUT_DOWN){
-		cout << "entered" << endl;
 		startPoint_x = x;
 		startPoint_y = y;
 		rotate = true;
 	}
 	if(button == GLUT_LEFT_BUTTON && state==GLUT_UP ){
-		cout << "finished" << endl;
 		endPoint_x = x;
 		endPoint_y = y;
-		rotate_phi = rotate_phi + startPoint_x - endPoint_x;
-		rotate_theta = rotate_theta + endPoint_y - startPoint_y;
+		if(endPoint_x>startPoint_x)
+			rotate_phi = rotate_phi + M_PI*(endPoint_y - endPoint_x)/180.0;
+		else{rotate_phi = rotate_phi - M_PI*(endPoint_y - endPoint_x)/180.0;}
+		if(endPoint_y>startPoint_y)
+			rotate_theta = rotate_theta + M_PI*(endPoint_y - startPoint_y)/180.0;
+		else{rotate_theta = rotate_theta - M_PI*(endPoint_y - startPoint_y)/180.0;}
 		setupCamera();
 		rotate=false;
 	}
@@ -479,8 +482,12 @@ void motion (int x, int y) {
 	if(rotate == true){
 		endPoint_x = x;
 		endPoint_y = y;
-		rotate_phi = rotate_phi + startPoint_x - endPoint_x;
-		rotate_theta = rotate_theta + endPoint_y - startPoint_y;
+		if(endPoint_x>startPoint_x)
+			rotate_phi = rotate_phi + M_PI*(endPoint_y - endPoint_x)/180.0;
+		else{rotate_phi = rotate_phi - M_PI*(endPoint_y - endPoint_x)/180.0;}
+		if(endPoint_y>startPoint_y)
+			rotate_theta = rotate_theta + M_PI*(endPoint_y - startPoint_y)/180.0;
+		else{rotate_theta = rotate_theta - M_PI*(endPoint_y - startPoint_y)/180.0;}
 		setupCamera();
 	}
 }
