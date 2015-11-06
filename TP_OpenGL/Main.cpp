@@ -321,28 +321,38 @@ void display () {
 		if(0)
 			drawTriangle();
 
+		if(0)
+			glSphere(0.0, 0.0, 0.0, 1.0);
+		if(0){
+
+			glSphere(0.0, 1.5, 0.0, 0.5);
+			glSphere(0.5, 0.5, 0.5, 0.5);
+			glSphere(-0.5, 0.5, 0.5, 0.5);
+			glSphere(-1.0, -0.5, 1.0, 0.5);
+			glSphere(0.0, -0.5, 1.0, 0.5);
+			glSphere(1.0, -0.5, 1.0, 0.5);
+
+			// glSphere(-2.0, -1.0, 0.0, 0.5);
+			// glSphere(-1.0, -1.0, 0.0, 0.5);
+			// glSphere(0.0, -1.0, 0.0, 0.5);
+			// glSphere(2.0, -1.0, 0.0, 0.5);
+			// glSphere(1.0, -1.0, 0.0, 0.5);
+		}
+
+
 		if(1){
-			glSphereWithMat(-2.0, 0.0, 0.0, 0.4,
+			glSphereWithMat(0.0, 1.5, 0.0, 0.5,
 							       1.0, 0.0, 0.0,
 										 1.0, 1.0, 1.0,
 										 1.0);
-			glSphereWithMat(0.0, 0.0, 0.0, 0.4,
+			glSphereWithMat(0.5, 0.5, 0.5, 0.5,
 											0.0, 1.0, 0.0,
 											0.6, 0.40, 1.0,
 											0.0);
-		}
-		if(0){
-			glSphere(-0.5, 1.0, 0.0, 0.5);
-			glSphere(0.5, 1.0, 0.0, 0.5);
-			glSphere(1.5, 0.0, 0.0, 0.5);
-			glSphere(0.5, 0.0, 0.0, 0.5);
-			glSphere(-0.5, 0.0, 0.0, 0.5);
-			glSphere(-1.5, 0.0, 0.0, 0.5);
-			glSphere(-2.0, -1.0, 0.0, 0.5);
-			glSphere(-1.0, -1.0, 0.0, 0.5);
-			glSphere(0.0, -1.0, 0.0, 0.5);
-			glSphere(2.0, -1.0, 0.0, 0.5);
-			glSphere(1.0, -1.0, 0.0, 0.5);
+			glSphereWithMat(-0.5, 0.5, 0.5, 0.5,
+											0.5, 1.6, 0.7,
+											0.8, 0.4, 0.1,
+											0.2);
 		}
 
     glFlush (); // Ensures any previous OpenGL call has been executed
