@@ -178,7 +178,7 @@ void setupCamera () {
 	glMatrixMode (GL_MODELVIEW); // Set the modelview matrix as current. All upcoming matrix manipulations will affect it.
 	glLoadIdentity ();
 	float camPosX, camPosY, camPosZ;
-	polar2Cartesian (camPhi+ rotate_phi*2.0/screenWidth, camTheta+ rotate_theta*2.0/screenHeight, camDist2Target/zoomFactor, camPosX, camPosY, camPosZ);
+	polar2Cartesian (camPhi+ rotate_phi, camTheta + rotate_theta, camDist2Target/zoomFactor, camPosX, camPosY, camPosZ);
 	camPosX += camTargetX ;
 	camPosY += camTargetY ;
 	camPosZ += camTargetZ;
@@ -220,13 +220,9 @@ void glSphere(float x, float y, float z, float r){
 
 	glMatrixMode(GL_MODELVIEW); // inidque que l'on va désormais altérer la matrice modèle-vue
 	glPushMatrix(); // pousse la matrice courante sur un pile
-	//v = (1.0/2.0)*((currentTime-passedTime)/1000.0)*((currentTime-passedTime)/1000.0)*acceleration;
 	x = x + v + 1.0/2.0 * deltaT*deltaT*acceleration;
 	y = y + v + 1.0/2.0 * deltaT*deltaT*acceleration;
 	z = z + v + 1.0/2.0 * deltaT*deltaT*acceleration;
-	// if(x > 3.0 || y> 3.0 || z>3.0){
-	// 	reset();
-	// }
 	glTranslatef(x,y,z); // applique une translation à la matrice
 
 
@@ -332,11 +328,6 @@ void display () {
 			glSphere(0.0, -0.5, 1.0, 0.5);
 			glSphere(1.0, -0.5, 1.0, 0.5);
 
-			// glSphere(-2.0, -1.0, 0.0, 0.5);
-			// glSphere(-1.0, -1.0, 0.0, 0.5);
-			// glSphere(0.0, -1.0, 0.0, 0.5);
-			// glSphere(2.0, -1.0, 0.0, 0.5);
-			// glSphere(1.0, -1.0, 0.0, 0.5);
 		}
 
 
@@ -433,11 +424,11 @@ void mouse (int button, int state, int x, int y) {
 		endPoint_x = x;
 		endPoint_y = y;
 		if(endPoint_x>startPoint_x)
-			rotate_phi = rotate_phi + M_PI*(endPoint_y - endPoint_x)/180.0;
-		else{rotate_phi = rotate_phi - M_PI*(endPoint_y - endPoint_x)/180.0;}
+			rotate_phi = rotate_phi + M_PI*(endPoint_x - startPoint_x)/screenWidth;
+		else{rotate_phi = rotate_phi - M_PI*(startPoint_x-endPoint_x)/screenWidth;}
 		if(endPoint_y>startPoint_y)
-			rotate_theta = rotate_theta + M_PI*(endPoint_y - startPoint_y)/180.0;
-		else{rotate_theta = rotate_theta - M_PI*(endPoint_y - startPoint_y)/180.0;}
+			rotate_theta = rotate_theta + M_PI*(endPoint_y - startPoint_y)/screenHeight;
+		else{rotate_theta = rotate_theta - M_PI*(startPoint_y - endPoint_y)/screenHeight;}
 		setupCamera();
 		rotate=false;
 	}
@@ -493,11 +484,11 @@ void motion (int x, int y) {
 		endPoint_x = x;
 		endPoint_y = y;
 		if(endPoint_x>startPoint_x)
-			rotate_phi = rotate_phi + M_PI*(endPoint_y - endPoint_x)/180.0;
-		else{rotate_phi = rotate_phi - M_PI*(endPoint_y - endPoint_x)/180.0;}
+			rotate_phi = rotate_phi + M_PI*(endPoint_x - startPoint_x)/screenWidth;
+		else{rotate_phi = rotate_phi - M_PI*(startPoint_x-endPoint_x)/screenWidth;}
 		if(endPoint_y>startPoint_y)
-			rotate_theta = rotate_theta + M_PI*(endPoint_y - startPoint_y)/180.0;
-		else{rotate_theta = rotate_theta - M_PI*(endPoint_y - startPoint_y)/180.0;}
+			rotate_theta = rotate_theta + M_PI*(endPoint_y - startPoint_y)/screenHeight;
+		else{rotate_theta = rotate_theta - M_PI*(startPoint_y - endPoint_y)/screenHeight;}
 		setupCamera();
 	}
 }
