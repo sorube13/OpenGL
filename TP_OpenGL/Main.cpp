@@ -39,12 +39,37 @@ static float camTargetZ;
 GLuint texture; // Identifiant opengl de la texture
 static float currentTime = 0.0; // Le temps courant en milliseconds
 static float acceleration = 0.0;
-static float passedTime;
+static float passedTime = 0.0;
+static float v = 0.0;
+static bool initFlag = true;
+static float deltaT;
+
+static bool move = false;
+static float startPoint_x = 0.0;
+static float endPoint_x = 0.0;
+static float x_move = 0.0;
+static float startPoint_y = 0.0;
+static float endPoint_y = 0.0;
+static float y_move = 0.0;
+
+static float zoomFactor = 1.0;
+static bool zoom = false;
+
+static bool rotate = false;
+static float rotate_phi = 0.0;
+static float rotate_theta = 0.0;
+
 
 void polar2Cartesian (float phi, float theta, float d, float & x, float & y, float & z) {
 	x = d*sin (theta) * cos (phi);
     y = d*cos (theta);
 	z = d*sin (theta) * sin (phi);
+}
+
+void cartesian2Polar(float x, float y, float z, float & phi, float & theta, float & d){
+		d = sqrt(x*x + y*y + z*z);
+		theta = acos(y/d);
+		phi = acos(x/(d*sin(theta)));
 }
 
 void printUsage () {
@@ -59,6 +84,10 @@ void printUsage () {
          << " <drag>+<left button>: rotate model" << std::endl
          << " <drag>+<right button>: move model" << std::endl
          << " <drag>+<middle button>: zoom" << std::endl
+				 << " [0][1][2][3]: light model" << std::endl
+				 << " +, - : modify acceleration of spheres" << std::endl
+				 << " s : stop animated model" << std::endl
+				 << " r: reset initial display" << std::endl
          << " q, <esc>: Quit" << std::endl << std::endl;
 }
 
@@ -148,19 +177,36 @@ void setupCamera () {
 	glMatrixMode (GL_MODELVIEW); // Set the modelview matrix as current. All upcoming matrix manipulations will affect it.
 	glLoadIdentity ();
 	float camPosX, camPosY, camPosZ;
-	polar2Cartesian (camPhi, camTheta, camDist2Target, camPosX, camPosY, camPosZ);
-	camPosX += camTargetX;
-	camPosY += camTargetY;
+	polar2Cartesian (camPhi+ rotate_phi/screenWidth, camTheta+ rotate_theta/screenHeight, camDist2Target/zoomFactor, camPosX, camPosY, camPosZ);
+	camPosX += camTargetX ;
+	camPosY += camTargetY ;
 	camPosZ += camTargetZ;
-	gluLookAt (camPosX, camPosY, camPosZ, camTargetX, camTargetY, camTargetZ, 0.0, 1.0, 0.0); // Set up the current modelview matrix with camera transform
+	gluLookAt (camPosX , camPosY, camPosZ, camTargetX + x_move*2/screenWidth, camTargetY+y_move*2/screenHeight, camTargetZ, 0.0, 1.0, 0.0); // Set up the current modelview matrix with camera transform
 }
 
 void reshape (int w, int h) {
     screenWidth = w;
-	screenHeight = h;
-	aspectRatio = static_cast<float>(w)/static_cast<float>(h);
-	glViewport (0, 0, (GLint)w, (GLint)h); // Dimension of the drawing region in the window
-	setupCamera ();
+		screenHeight = h;
+		aspectRatio = static_cast<float>(w)/static_cast<float>(h);
+		glViewport (0, 0, (GLint)w, (GLint)h); // Dimension of the drawing region in the window
+		setupCamera ();
+}
+
+void reset(){
+	acceleration = 0.0;
+	currentTime = 0.0;
+	deltaT = 0.0;
+	passedTime = 0.0;
+	v=0.0;
+	initFlag = true;
+	x_move = 0.0;
+	y_move =0.0;
+	move = false;
+	zoom = false;
+	zoomFactor = 1.0;
+	rotate = 0.0;
+	rotate_phi = 0.0;
+	rotate_theta = 0.0;
 }
 
 void glSphere(float x, float y, float z, float r){
@@ -173,11 +219,13 @@ void glSphere(float x, float y, float z, float r){
 
 	glMatrixMode(GL_MODELVIEW); // inidque que l'on va désormais altérer la matrice modèle-vue
 	glPushMatrix(); // pousse la matrice courante sur un pile
-	float v = (1.0/2.0)*((currentTime-passedTime)/1000.0)*((currentTime-passedTime)/1000.0)*acceleration;
-	x = x + v;
-	cout << "x: " << x << endl;
-	cout << "v: " << v << endl;
-	cout << "------------------" << endl;
+	//v = (1.0/2.0)*((currentTime-passedTime)/1000.0)*((currentTime-passedTime)/1000.0)*acceleration;
+	x = x + v + 1.0/2.0 * deltaT*deltaT*acceleration;
+	y = y + v + 1.0/2.0 * deltaT*deltaT*acceleration;
+	z = z + v + 1.0/2.0 * deltaT*deltaT*acceleration;
+	// if(x > 3.0 || y> 3.0 || z>3.0){
+	// 	reset();
+	// }
 	glTranslatef(x,y,z); // applique une translation à la matrice
 
 
@@ -272,17 +320,17 @@ void display () {
 		if(0)
 			drawTriangle();
 
-		if(1){
-			glSphereWithMat(-2.0, 0.0, 0.0, 0.4,
-							       1.0, 0.0, 0.0,
-										 1.0, 1.0, 1.0,
-										 1.0);
-			// glSphereWithMat(1.0, 0.0, 0.0, 0.4,
-			// 								0.0, 1.0, 0.0,
-			// 								0.6, 0.40, 1.0,
-			// 								0.0);
-		}
 		if(0){
+			// glSphereWithMat(-2.0, 0.0, 0.0, 0.4,
+			// 				       1.0, 0.0, 0.0,
+			// 							 1.0, 1.0, 1.0,
+			// 							 1.0);
+			glSphereWithMat(0.0, 0.0, 0.0, 0.4,
+											0.0, 1.0, 0.0,
+											0.6, 0.40, 1.0,
+											0.0);
+		}
+		if(1){
 			glSphere(-0.5, 1.0, 0.0, 0.5);
 			glSphere(0.5, 1.0, 0.0, 0.5);
 			glSphere(1.5, 0.0, 0.0, 0.5);
@@ -340,22 +388,21 @@ void keyboard (unsigned char keyPressed, int x, int y) {
 			break;
 
 		case '+':
-		passedTime = currentTime;
-		//currentTime = glutGet((GLenum)GLUT_ELAPSED_TIME);
-			acceleration = acceleration + 1;
+			acceleration = acceleration + 0.0001;
 			break;
 
 		case '-':
-			if(acceleration > 0.0){
-				passedTime = currentTime;
-				//currentTime = glutGet((GLenum)GLUT_ELAPSED_TIME);
-				acceleration = acceleration - 1;
-			}else{ acceleration = 0.0;}
+			if(acceleration-0.0001 < 0.0){
+				acceleration = 0.0;
+			}else{acceleration = acceleration - 0.0001;}
+			break;
+
+		case 's':
+			acceleration = 0.0;
 			break;
 
 		case 'r':
-			acceleration = 0.0;
-			currentTime = 0.0;
+			reset();
 			break;
 
      default:
@@ -366,18 +413,92 @@ void keyboard (unsigned char keyPressed, int x, int y) {
 }
 
 void mouse (int button, int state, int x, int y) {
+	if(button == GLUT_LEFT_BUTTON && state==GLUT_DOWN){
+		cout << "entered" << endl;
+		startPoint_x = x;
+		startPoint_y = y;
+		rotate = true;
+	}
+	if(button == GLUT_LEFT_BUTTON && state==GLUT_UP ){
+		cout << "finished" << endl;
+		endPoint_x = x;
+		endPoint_y = y;
+		rotate_phi = rotate_phi + startPoint_x - endPoint_x;
+		rotate_theta = rotate_theta + endPoint_y - startPoint_y;
+		setupCamera();
+		rotate=false;
+	}
+	if(button == GLUT_RIGHT_BUTTON && state==GLUT_DOWN){
+	  startPoint_x = x;
+		startPoint_y = y;
+		move = true;
+	}
+	if(button == GLUT_RIGHT_BUTTON && state==GLUT_UP ){
+		endPoint_x = x;
+		endPoint_y = y;
+		x_move = x_move + startPoint_x - endPoint_x;
+		y_move = y_move + endPoint_y - startPoint_y;
+		setupCamera();
+		move=false;
+	}
+	if(button == GLUT_MIDDLE_BUTTON && state==GLUT_DOWN){
+		startPoint_y = y;
+		zoom = true;
+	}
+	if(button == GLUT_MIDDLE_BUTTON && state==GLUT_UP){
+		endPoint_y = y;
+		if(startPoint_y<endPoint_y){
+			zoomFactor =1.0/sqrt((endPoint_y-startPoint_y)*(endPoint_y-startPoint_y));
+		}else{
+			zoomFactor =sqrt((endPoint_y-startPoint_y)*(endPoint_y-startPoint_y));
+			}
+		setupCamera();
+		zoom=false;
+	}
 }
 
 void motion (int x, int y) {
+	if(move==true){
+		endPoint_x = x;
+		endPoint_y = y;
+		x_move = x_move + startPoint_x - endPoint_x;
+		y_move = y_move + endPoint_y - startPoint_y;
+		startPoint_x = endPoint_x;
+		startPoint_y = endPoint_y;
+		setupCamera();
+	}
+	if(zoom==true){
+		endPoint_y = y;
+		if(startPoint_y<endPoint_y){
+			zoomFactor =1.0/sqrt((endPoint_y-startPoint_y)*(endPoint_y-startPoint_y));
+		}else{
+			zoomFactor =sqrt((endPoint_y-startPoint_y)*(endPoint_y-startPoint_y));
+			}
+		setupCamera();
+	}
+	if(rotate == true){
+		endPoint_x = x;
+		endPoint_y = y;
+		rotate_phi = rotate_phi + startPoint_x - endPoint_x;
+		rotate_theta = rotate_theta + endPoint_y - startPoint_y;
+		setupCamera();
+	}
 }
 
 // This function is executed in an infinite loop. It updated the window title
 // (frame-per-second, model size) and ask for rendering
 void idle () {
 	glutPostRedisplay();
-	//passedTime = currentTime;
+	if(initFlag == false){
+		currentTime = glutGet((GLenum)GLUT_ELAPSED_TIME);
+		passedTime = glutGet((GLenum)GLUT_ELAPSED_TIME);
+		deltaT = currentTime-passedTime;
+		initFlag = true;
+	}
+	passedTime = currentTime;
 	currentTime = glutGet((GLenum)GLUT_ELAPSED_TIME);
-
+	deltaT = currentTime - passedTime;
+	v = v+ acceleration*deltaT;
 }
 
 int main (int argc, char ** argv) {
@@ -387,11 +508,11 @@ int main (int argc, char ** argv) {
     window = glutCreateWindow (appTitle.c_str ()); // create the window
     init (); // Your initialization code (OpenGL states, geometry, material, lights, etc)
     glutReshapeFunc (reshape); // Callback function executed whenever glut need to setup the projection matrix
-	glutDisplayFunc (display); // Callback function executed when the window app need to be redrawn
+		glutDisplayFunc (display); // Callback function executed when the window app need to be redrawn
     glutKeyboardFunc (keyboard); // Callback function executed when the keyboard is used
     glutMouseFunc (mouse); // Callback function executed when a mouse button is clicked
-	glutMotionFunc (motion); // Callback function executed when the mouse move
-	glutIdleFunc (idle); // Callback function executed continuously when no other event happens (good for background procesing or animation for instance).
+		glutMotionFunc (motion); // Callback function executed when the mouse move
+		glutIdleFunc (idle); // Callback function executed continuously when no other event happens (good for background procesing or animation for instance).
     printUsage (); // By default, display the usage help of the program
     glutMainLoop ();
     return 0;
